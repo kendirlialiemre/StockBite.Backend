@@ -25,6 +25,13 @@ public class UsersController(IMediator mediator) : ControllerBase
         await mediator.Send(new UpdatePermissionsCommand(userId, req.Permissions), ct);
         return NoContent();
     }
+
+    [HttpDelete("{userId:guid}")]
+    public async Task<IActionResult> DeleteEmployee(Guid userId, CancellationToken ct)
+    {
+        await mediator.Send(new DeleteEmployeeCommand(userId), ct);
+        return NoContent();
+    }
 }
 
 public record UpdatePermissionsRequest(IReadOnlyList<string> Permissions);

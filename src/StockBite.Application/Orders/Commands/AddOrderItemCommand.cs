@@ -42,8 +42,9 @@ public class AddOrderItemCommandHandler(IApplicationDbContext db)
         await db.SaveChangesAsync(ct);
 
         return new OrderDto(order.Id, order.TableId, order.Table?.Name, order.Status,
-            order.OpenedAt, order.ClosedAt, order.TotalAmount, order.Note,
+            order.OpenedAt, order.ClosedAt, order.TotalAmount, order.Note, order.PaymentMethod,
             order.Items.Select(i => new OrderItemDto(
                 i.Id, i.MenuItemId, i.MenuItem.Name, i.Quantity, i.UnitPrice, i.Note)).ToList());
     }
 }
+

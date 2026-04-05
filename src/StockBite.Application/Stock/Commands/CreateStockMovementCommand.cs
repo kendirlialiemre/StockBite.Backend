@@ -53,6 +53,29 @@ public class CreateStockMovementCommandHandler(IApplicationDbContext db, ICurren
         if (request.LowStockThreshold.HasValue)
             stockItem.LowStockThreshold = request.LowStockThreshold.Value;
 
+        // Track stock purchase cost in daily summary
+        if (request.Type == StockMovementType.StockIn && request.UnitCost.HasValue)
+        {
+            var purchaseCost = request.Quantity * request.UnitCost.Value;
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            var summary = await db.DailySummaries
+                .FirstOrDefaultAsync(s => s.TenantId == currentUser.TenantId!.Value && s.Date == today, ct);
+
+            if (summary == null)
+            {
+                db.DailySummaries.Add(new DailySummary
+                {
+                    TenantId = currentUser.TenantId!.Value,
+                    Date = today,
+                    StockPurchaseCost = purchaseCost
+                });
+            }
+            else
+            {
+                summary.StockPurchaseCost += purchaseCost;
+            }
+        }
+
         await db.SaveChangesAsync(ct);
         return new StockMovementDto(movement.Id, movement.StockItemId, stockItem.Name,
             movement.Type, movement.Quantity, movement.UnitCost, movement.Note, movement.CreatedAt);

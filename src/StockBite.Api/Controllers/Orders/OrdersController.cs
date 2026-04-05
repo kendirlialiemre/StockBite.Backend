@@ -42,9 +42,9 @@ public class OrdersController(IMediator mediator) : ControllerBase
 
     [HttpPost("{orderId:guid}/close")]
     [RequirePermission(Permissions.Tables.Manage)]
-    public async Task<IActionResult> CloseOrder(Guid orderId, CancellationToken ct)
+    public async Task<IActionResult> CloseOrder(Guid orderId, [FromBody] CloseOrderRequest req, CancellationToken ct)
     {
-        await mediator.Send(new CloseOrderCommand(orderId), ct);
+        await mediator.Send(new CloseOrderCommand(orderId, req.PaymentMethod), ct);
         return NoContent();
     }
 
@@ -81,3 +81,4 @@ public class TablesController(IMediator mediator) : ControllerBase
 
 public record AddItemRequest(Guid MenuItemId, int Quantity, string? Note);
 public record OpenTableRequest(string Name);
+public record CloseOrderRequest(PaymentMethod PaymentMethod);

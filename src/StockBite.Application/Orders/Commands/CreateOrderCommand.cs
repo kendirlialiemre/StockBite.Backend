@@ -22,6 +22,7 @@ public class CreateOrderCommandHandler(IApplicationDbContext db, ICurrentUserSer
         db.Orders.Add(order);
         await db.SaveChangesAsync(ct);
         return new OrderDto(order.Id, order.TableId, null, order.Status,
-            order.OpenedAt, order.ClosedAt, order.TotalAmount, order.Note, []);
+            order.OpenedAt, order.ClosedAt, order.TotalAmount, order.Note, order.PaymentMethod, []);
     }
 }
+

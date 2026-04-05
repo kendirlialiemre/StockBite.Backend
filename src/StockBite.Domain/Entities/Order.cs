@@ -13,5 +13,6 @@ public class Order : BaseEntity
     public decimal TotalAmount { get; set; }
     public Guid CreatedBy { get; set; }
     public string? Note { get; set; }
+    public PaymentMethod? PaymentMethod { get; set; }
     public ICollection<OrderItem> Items { get; set; } = new List<OrderItem>();
 }

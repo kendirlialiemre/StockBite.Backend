@@ -24,7 +24,7 @@ public class GetOrdersQueryHandler(IApplicationDbContext db)
         return await query.OrderByDescending(o => o.OpenedAt)
             .Select(o => new OrderDto(
                 o.Id, o.TableId, o.Table != null ? o.Table.Name : null,
-                o.Status, o.OpenedAt, o.ClosedAt, o.TotalAmount, o.Note,
+                o.Status, o.OpenedAt, o.ClosedAt, o.TotalAmount, o.Note, o.PaymentMethod,
                 o.Items.Select(i => new OrderItemDto(
                     i.Id, i.MenuItemId, i.MenuItem.Name, i.Quantity, i.UnitPrice, i.Note)).ToList()))
             .ToListAsync(ct);

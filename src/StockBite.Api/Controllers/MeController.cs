@@ -3,13 +3,14 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using StockBite.Application.Common.Interfaces;
+using StockBite.Application.Users.Commands;
 
 namespace StockBite.Api.Controllers;
 
 [ApiController]
 [Route("api/me")]
 [Authorize]
-public class MeController(IApplicationDbContext db, ICurrentUserService currentUser) : ControllerBase
+public class MeController(IApplicationDbContext db, ICurrentUserService currentUser, IMediator mediator) : ControllerBase
 {
     [HttpGet("info")]
     public async Task<IActionResult> GetMyInfo(CancellationToken ct)
@@ -43,4 +44,18 @@ public class MeController(IApplicationDbContext db, ICurrentUserService currentU
 
         return Ok(modules);
     }
+
+    [HttpPatch("profile")]
+    public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest req, CancellationToken ct)
+    {
+        await mediator.Send(new UpdateProfileCommand(req.FirstName, req.LastName, req.CurrentPassword, req.NewPassword), ct);
+        return NoContent();
+    }
 }
+
+public record UpdateProfileRequest(
+    string FirstName,
+    string LastName,
+    string? CurrentPassword,
+    string? NewPassword
+);

@@ -21,21 +21,38 @@ public class GetReportRangeQueryHandler(IApplicationDbContext db)
             .Where(o => o.Status == OrderStatus.Closed && o.ClosedAt >= fromDt && o.ClosedAt <= toDt)
             .ToListAsync(ct);
 
-        var dailyGroups = orders
-            .GroupBy(o => DateOnly.FromDateTime(o.ClosedAt!.Value))
-            .Select(g =>
-            {
-                var revenue = g.Sum(o => o.TotalAmount);
-                var cost = g.Sum(o => o.Items.Sum(i => (i.UnitCost ?? 0) * i.Quantity));
-                return new DailySummaryDto(g.Key, revenue, cost, revenue - cost, g.Count());
-            })
-            .OrderBy(d => d.Date)
-            .ToList();
+        // Get daily summaries from DB for stock purchase costs
+        var summaries = await db.DailySummaries
+            .Where(s => s.Date >= request.From && s.Date <= request.To)
+            .ToListAsync(ct);
+
+        // Collect all dates from both orders and stock summaries
+        var orderDates = orders.Select(o => DateOnly.FromDateTime(o.ClosedAt!.Value)).Distinct();
+        var summaryDates = summaries.Select(s => s.Date).Distinct();
+        var allDates = orderDates.Union(summaryDates).OrderBy(d => d).ToList();
+
+        var dailyGroups = allDates.Select(date =>
+        {
+            var dayOrders = orders.Where(o => DateOnly.FromDateTime(o.ClosedAt!.Value) == date).ToList();
+            var daySummary = summaries.FirstOrDefault(s => s.Date == date);
+
+            var revenue = dayOrders.Sum(o => o.TotalAmount);
+            var cashRevenue = dayOrders.Where(o => o.PaymentMethod == Domain.Enums.PaymentMethod.Cash).Sum(o => o.TotalAmount);
+            var cardRevenue = dayOrders.Where(o => o.PaymentMethod == Domain.Enums.PaymentMethod.Card).Sum(o => o.TotalAmount);
+            var cost = dayOrders.Sum(o => o.Items.Sum(i => (i.UnitCost ?? 0) * i.Quantity));
+            var stockPurchaseCost = daySummary?.StockPurchaseCost ?? 0;
+            var grossProfit = revenue - cost - stockPurchaseCost;
+
+            return new DailySummaryDto(date, revenue, cashRevenue, cardRevenue, cost, stockPurchaseCost, grossProfit, dayOrders.Count);
+        }).ToList();
 
         return new ReportRangeDto(
             request.From, request.To,
             dailyGroups.Sum(d => d.TotalRevenue),
+            dailyGroups.Sum(d => d.CashRevenue),
+            dailyGroups.Sum(d => d.CardRevenue),
             dailyGroups.Sum(d => d.TotalCost),
+            dailyGroups.Sum(d => d.StockPurchaseCost),
             dailyGroups.Sum(d => d.GrossProfit),
             dailyGroups.Sum(d => d.OrderCount),
             dailyGroups);
