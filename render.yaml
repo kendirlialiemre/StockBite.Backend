@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: stockbite-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ConnectionStrings__Default
+        sync: false
+      - key: JwtSettings__Secret
+        sync: false
+      - key: JwtSettings__Issuer
+        value: stockbite-api
+      - key: JwtSettings__Audience
+        value: stockbite-clients
+      - key: JwtSettings__AccessTokenExpiryMinutes
+        value: "60"
+      - key: AllowedOrigins__0
+        sync: false
