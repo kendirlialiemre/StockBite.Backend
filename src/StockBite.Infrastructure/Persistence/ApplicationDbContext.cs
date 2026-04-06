@@ -27,6 +27,7 @@ public class ApplicationDbContext(
     public DbSet<PackageModule> PackageModules => Set<PackageModule>();
     public DbSet<StockBite.Domain.Entities.Payment> Payments => Set<StockBite.Domain.Entities.Payment>();
     public DbSet<MenuQrCode> MenuQrCodes => Set<MenuQrCode>();
+    public DbSet<Expense> Expenses => Set<Expense>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -47,6 +48,7 @@ public class ApplicationDbContext(
         modelBuilder.Entity<StockMovement>().HasQueryFilter(e => currentUser.IsSuperAdmin || e.TenantId == currentUser.TenantId);
         modelBuilder.Entity<TenantUserPermission>().HasQueryFilter(e => currentUser.IsSuperAdmin || e.TenantId == currentUser.TenantId);
         modelBuilder.Entity<MenuQrCode>().HasQueryFilter(e => currentUser.IsSuperAdmin || e.TenantId == currentUser.TenantId);
+        modelBuilder.Entity<Expense>().HasQueryFilter(e => currentUser.IsSuperAdmin || e.TenantId == currentUser.TenantId);
     }
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

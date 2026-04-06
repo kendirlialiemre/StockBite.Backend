@@ -8,6 +8,7 @@ using StockBite.Application.Menu.Commands;
 using StockBite.Application.Menu.Queries;
 using StockBite.Domain.Constants;
 using StockBite.Domain.Enums;
+using System.Net.Http;
 
 namespace StockBite.Api.Controllers.Menu;
 
@@ -33,7 +34,7 @@ public class UpdateItemRequest
 [Route("api/menu")]
 [Authorize]
 [RequireModule(ModuleType.Menu)]
-public class MenuController(IMediator mediator, IApplicationDbContext db, IWebHostEnvironment env) : ControllerBase
+public class MenuController(IMediator mediator, IApplicationDbContext db, IWebHostEnvironment env, IStorageService storage) : ControllerBase
 {
     [HttpGet("settings")]
     public async Task<IActionResult> GetSettings(CancellationToken ct) =>
@@ -193,26 +194,24 @@ public class MenuController(IMediator mediator, IApplicationDbContext db, IWebHo
         var item = await db.MenuItems.FirstOrDefaultAsync(i => i.Id == id, ct);
         if (item == null) return NotFound();
 
+        // Eski resmi Supabase Storage'dan sil
         if (!string.IsNullOrEmpty(item.ImageUrl))
-        {
-            var oldPath = Path.Combine(env.WebRootPath, item.ImageUrl.TrimStart('/'));
-            if (System.IO.File.Exists(oldPath))
-                System.IO.File.Delete(oldPath);
-        }
+            await storage.DeleteAsync(item.ImageUrl, ct);
 
-        var uploadsDir = Path.Combine(env.WebRootPath, "uploads", "menu");
-        Directory.CreateDirectory(uploadsDir);
+        using var stream = file.OpenReadStream();
+        var imageUrl = await storage.UploadAsync(stream, file.FileName, file.ContentType, ct);
 
-        var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
-        var fileName = $"{Guid.NewGuid()}{ext}";
-        var filePath = Path.Combine(uploadsDir, fileName);
-
-        using (var stream = System.IO.File.Create(filePath))
-            await file.CopyToAsync(stream, ct);
-
-        item.ImageUrl = $"/uploads/menu/{fileName}";
+        item.ImageUrl = imageUrl;
         await db.SaveChangesAsync(ct);
 
-        return Ok(new { imageUrl = item.ImageUrl });
+        return Ok(new { imageUrl });
+    }
+
+    [HttpDelete("items/{id:guid}")]
+    [RequirePermission(Permissions.Menu.Edit)]
+    public async Task<IActionResult> DeleteItem(Guid id, CancellationToken ct)
+    {
+        await mediator.Send(new DeleteMenuItemCommand(id), ct);
+        return NoContent();
     }
 }

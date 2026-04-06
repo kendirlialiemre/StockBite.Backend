@@ -27,6 +27,8 @@ public static class DependencyInjection
         services.AddScoped<IPasswordHasher, PasswordHasher>();
         services.Configure<IyzicoSettings>(configuration.GetSection("IyzicoSettings"));
         services.AddScoped<IPaymentService, IyzicoPaymentService>();
+        services.AddScoped<IStorageService, SupabaseStorageService>();
+        services.AddHttpClient();
         services.AddHttpContextAccessor();
 
         var jwtSection = configuration.GetSection("JwtSettings");

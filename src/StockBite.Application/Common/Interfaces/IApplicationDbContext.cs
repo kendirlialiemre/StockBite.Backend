@@ -24,5 +24,6 @@ public interface IApplicationDbContext
     DbSet<PackageModule> PackageModules { get; }
     DbSet<Payment> Payments { get; }
     DbSet<MenuQrCode> MenuQrCodes { get; }
+    DbSet<Expense> Expenses { get; }
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
