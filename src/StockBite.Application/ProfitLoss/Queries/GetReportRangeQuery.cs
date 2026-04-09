@@ -17,7 +17,7 @@ public class GetReportRangeQueryHandler(IApplicationDbContext db)
         var toDt = request.To.ToDateTime(TimeOnly.MaxValue, DateTimeKind.Utc);
 
         var orders = await db.Orders
-            .Include(o => o.Items)
+            .Include(o => o.Items).ThenInclude(i => i.MenuItem)
             .Where(o => o.Status == OrderStatus.Closed && o.ClosedAt >= fromDt && o.ClosedAt <= toDt)
             .ToListAsync(ct);
 
@@ -53,9 +53,18 @@ public class GetReportRangeQueryHandler(IApplicationDbContext db)
             var cost = dayOrders.Sum(o => o.Items.Sum(i => (i.UnitCost ?? 0) * i.Quantity));
             var stockPurchaseCost = daySummary?.StockPurchaseCost ?? 0;
             var grossProfit = totalRevenue - cost - stockPurchaseCost - dayExpenses;
+            var tableCount = dayOrders.Count(o => o.TableId.HasValue);
 
-            return new DailySummaryDto(date, totalRevenue, cashRevenue, cardRevenue, daySubRevenue, cost, stockPurchaseCost, dayExpenses, grossProfit, dayOrders.Count);
+            return new DailySummaryDto(date, totalRevenue, cashRevenue, cardRevenue, daySubRevenue, cost, stockPurchaseCost, dayExpenses, grossProfit, dayOrders.Count, tableCount);
         }).ToList();
+
+        var topProducts = orders
+            .SelectMany(o => o.Items)
+            .GroupBy(i => i.MenuItem.Name)
+            .Select(g => new TopProductDto(g.Key, g.Sum(i => i.Quantity), g.Sum(i => i.UnitPrice * i.Quantity)))
+            .OrderByDescending(p => p.TotalQuantity)
+            .Take(5)
+            .ToList();
 
         return new ReportRangeDto(
             request.From, request.To,
@@ -68,6 +77,7 @@ public class GetReportRangeQueryHandler(IApplicationDbContext db)
             dailyGroups.Sum(d => d.OtherExpenses),
             dailyGroups.Sum(d => d.GrossProfit),
             dailyGroups.Sum(d => d.OrderCount),
-            dailyGroups);
+            dailyGroups,
+            topProducts);
     }
 }
