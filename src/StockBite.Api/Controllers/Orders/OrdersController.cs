@@ -17,8 +17,8 @@ public class OrdersController(IMediator mediator) : ControllerBase
 {
     [HttpGet]
     [RequirePermission(Permissions.Tables.View)]
-    public async Task<IActionResult> GetOrders([FromQuery] int? status, CancellationToken ct) =>
-        Ok(await mediator.Send(new GetOrdersQuery(status.HasValue ? (OrderStatus)status.Value : null), ct));
+    public async Task<IActionResult> GetOrders([FromQuery] int? status, [FromQuery] DateOnly? from, [FromQuery] DateOnly? to, CancellationToken ct) =>
+        Ok(await mediator.Send(new GetOrdersQuery(status.HasValue ? (OrderStatus)status.Value : null, from, to), ct));
 
     [HttpGet("{id:guid}")]
     [RequirePermission(Permissions.Tables.View)]
@@ -44,7 +44,7 @@ public class OrdersController(IMediator mediator) : ControllerBase
     [RequirePermission(Permissions.Tables.Manage)]
     public async Task<IActionResult> CloseOrder(Guid orderId, [FromBody] CloseOrderRequest req, CancellationToken ct)
     {
-        await mediator.Send(new CloseOrderCommand(orderId, req.PaymentMethod), ct);
+        await mediator.Send(new CloseOrderCommand(orderId, req.PaymentMethod, req.CashAmount, req.CardAmount), ct);
         return NoContent();
     }
 
@@ -81,4 +81,4 @@ public class TablesController(IMediator mediator) : ControllerBase
 
 public record AddItemRequest(Guid MenuItemId, int Quantity, string? Note);
 public record OpenTableRequest(string Name);
-public record CloseOrderRequest(PaymentMethod PaymentMethod);
+public record CloseOrderRequest(PaymentMethod PaymentMethod, decimal? CashAmount = null, decimal? CardAmount = null);

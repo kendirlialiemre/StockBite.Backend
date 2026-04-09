@@ -25,5 +25,8 @@ public interface IApplicationDbContext
     DbSet<Payment> Payments { get; }
     DbSet<MenuQrCode> MenuQrCodes { get; }
     DbSet<Expense> Expenses { get; }
+    DbSet<Member> Members { get; }
+    DbSet<MemberSubscription> MemberSubscriptions { get; }
+    DbSet<SubscriptionSession> SubscriptionSessions { get; }
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

@@ -8,7 +8,7 @@ using PaymentMethod = StockBite.Domain.Enums.PaymentMethod;
 
 namespace StockBite.Application.Orders.Commands;
 
-public record CloseOrderCommand(Guid OrderId, PaymentMethod PaymentMethod) : IRequest;
+public record CloseOrderCommand(Guid OrderId, PaymentMethod PaymentMethod, decimal? CashAmount = null, decimal? CardAmount = null) : IRequest;
 public record CancelOrderCommand(Guid OrderId) : IRequest;
 
 public class CloseOrderCommandHandler(IApplicationDbContext db, ICurrentUserService currentUser)
@@ -31,6 +31,8 @@ public class CloseOrderCommandHandler(IApplicationDbContext db, ICurrentUserServ
         order.ClosedAt = DateTime.UtcNow;
         order.TotalAmount = order.Items.Sum(i => i.UnitPrice * i.Quantity);
         order.PaymentMethod = request.PaymentMethod;
+        order.CashAmount = request.PaymentMethod == PaymentMethod.Mixed ? request.CashAmount : null;
+        order.CardAmount = request.PaymentMethod == PaymentMethod.Mixed ? request.CardAmount : null;
 
         // Deduct stock for each ingredient × order quantity
         decimal totalIngredientCost = 0;
@@ -66,7 +68,18 @@ public class CloseOrderCommandHandler(IApplicationDbContext db, ICurrentUserServ
             ? totalIngredientCost
             : order.Items.Sum(i => (i.UnitCost ?? 0) * i.Quantity);
 
-        var isCash = request.PaymentMethod == PaymentMethod.Cash;
+        var cashRevenue = request.PaymentMethod switch
+        {
+            PaymentMethod.Cash => order.TotalAmount,
+            PaymentMethod.Mixed => request.CashAmount ?? 0,
+            _ => 0
+        };
+        var cardRevenue = request.PaymentMethod switch
+        {
+            PaymentMethod.Card => order.TotalAmount,
+            PaymentMethod.Mixed => request.CardAmount ?? 0,
+            _ => 0
+        };
 
         if (summary == null)
         {
@@ -75,8 +88,8 @@ public class CloseOrderCommandHandler(IApplicationDbContext db, ICurrentUserServ
                 TenantId = order.TenantId,
                 Date = today,
                 TotalRevenue = order.TotalAmount,
-                CashRevenue = isCash ? order.TotalAmount : 0,
-                CardRevenue = isCash ? 0 : order.TotalAmount,
+                CashRevenue = cashRevenue,
+                CardRevenue = cardRevenue,
                 TotalCost = totalCost,
                 GrossProfit = order.TotalAmount - totalCost,
                 OrderCount = 1
@@ -85,8 +98,8 @@ public class CloseOrderCommandHandler(IApplicationDbContext db, ICurrentUserServ
         else
         {
             summary.TotalRevenue += order.TotalAmount;
-            summary.CashRevenue += isCash ? order.TotalAmount : 0;
-            summary.CardRevenue += isCash ? 0 : order.TotalAmount;
+            summary.CashRevenue += cashRevenue;
+            summary.CardRevenue += cardRevenue;
             summary.TotalCost += totalCost;
             summary.GrossProfit += order.TotalAmount - totalCost;
             summary.OrderCount += 1;

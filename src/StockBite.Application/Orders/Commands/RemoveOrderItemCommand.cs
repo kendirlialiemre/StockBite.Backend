@@ -30,7 +30,7 @@ public class RemoveOrderItemCommandHandler(IApplicationDbContext db)
         await db.SaveChangesAsync(ct);
 
         return new OrderDto(order.Id, order.TableId, order.Table?.Name, order.Status,
-            order.OpenedAt, order.ClosedAt, order.TotalAmount, order.Note, order.PaymentMethod,
+            order.OpenedAt, order.ClosedAt, order.TotalAmount, order.Note, order.PaymentMethod, order.CashAmount, order.CardAmount,
             order.Items.Select(i => new OrderItemDto(
                 i.Id, i.MenuItemId, i.MenuItem.Name, i.Quantity, i.UnitPrice, i.Note)).ToList());
     }

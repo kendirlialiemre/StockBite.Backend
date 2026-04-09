@@ -10,6 +10,8 @@ public class OrderConfiguration : IEntityTypeConfiguration<Order>
     {
         builder.HasKey(o => o.Id);
         builder.Property(o => o.TotalAmount).HasPrecision(10, 2);
+        builder.Property(o => o.CashAmount).HasPrecision(10, 2);
+        builder.Property(o => o.CardAmount).HasPrecision(10, 2);
         builder.HasMany(o => o.Items).WithOne(i => i.Order)
             .HasForeignKey(i => i.OrderId).OnDelete(DeleteBehavior.Cascade);
     }

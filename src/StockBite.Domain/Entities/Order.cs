@@ -11,6 +11,8 @@ public class Order : BaseEntity
     public DateTime OpenedAt { get; set; } = DateTime.UtcNow;
     public DateTime? ClosedAt { get; set; }
     public decimal TotalAmount { get; set; }
+    public decimal? CashAmount { get; set; }
+    public decimal? CardAmount { get; set; }
     public Guid CreatedBy { get; set; }
     public string? Note { get; set; }
     public PaymentMethod? PaymentMethod { get; set; }
