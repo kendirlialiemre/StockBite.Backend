@@ -28,5 +28,6 @@ public interface IApplicationDbContext
     DbSet<Member> Members { get; }
     DbSet<MemberSubscription> MemberSubscriptions { get; }
     DbSet<SubscriptionSession> SubscriptionSessions { get; }
+    DbSet<Event> Events { get; }
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

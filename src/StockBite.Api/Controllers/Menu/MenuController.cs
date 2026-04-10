@@ -34,7 +34,7 @@ public class UpdateItemRequest
 [Route("api/menu")]
 [Authorize]
 [RequireModule(ModuleType.Menu)]
-public class MenuController(IMediator mediator, IApplicationDbContext db, IWebHostEnvironment env, IStorageService storage) : ControllerBase
+public class MenuController(IMediator mediator, IApplicationDbContext db, IStorageService storage) : ControllerBase
 {
     [HttpGet("settings")]
     public async Task<IActionResult> GetSettings(CancellationToken ct) =>
@@ -73,21 +73,14 @@ public class MenuController(IMediator mediator, IApplicationDbContext db, IWebHo
         if (qr == null) return NotFound();
 
         if (!string.IsNullOrEmpty(qr.LogoUrl))
-        {
-            var old = Path.Combine(env.WebRootPath, qr.LogoUrl.TrimStart('/'));
-            if (System.IO.File.Exists(old)) System.IO.File.Delete(old);
-        }
+            await storage.DeleteAsync(qr.LogoUrl, ct);
 
-        var dir = Path.Combine(env.WebRootPath, "uploads", "logos");
-        Directory.CreateDirectory(dir);
-        var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
-        var fileName = $"{Guid.NewGuid()}{ext}";
-        using (var stream = System.IO.File.Create(Path.Combine(dir, fileName)))
-            await file.CopyToAsync(stream, ct);
+        using var stream = file.OpenReadStream();
+        var logoUrl = await storage.UploadAsync(stream, file.FileName, file.ContentType, "logos", ct);
 
-        qr.LogoUrl = $"/uploads/logos/{fileName}";
+        qr.LogoUrl = logoUrl;
         await db.SaveChangesAsync(ct);
-        return Ok(new { logoUrl = qr.LogoUrl });
+        return Ok(new { logoUrl });
     }
 
     [HttpPost("settings/logo")]
@@ -113,28 +106,16 @@ public class MenuController(IMediator mediator, IApplicationDbContext db, IWebHo
         var tenant = await db.Tenants.IgnoreQueryFilters().FirstOrDefaultAsync(t => t.Id == tid, ct);
         if (tenant == null) return NotFound();
 
-        // Eski logoyu sil
         if (!string.IsNullOrEmpty(tenant.LogoUrl))
-        {
-            var oldPath = Path.Combine(env.WebRootPath, tenant.LogoUrl.TrimStart('/'));
-            if (System.IO.File.Exists(oldPath))
-                System.IO.File.Delete(oldPath);
-        }
+            await storage.DeleteAsync(tenant.LogoUrl, ct);
 
-        var uploadsDir = Path.Combine(env.WebRootPath, "uploads", "logos");
-        Directory.CreateDirectory(uploadsDir);
+        using var stream = file.OpenReadStream();
+        var logoUrl = await storage.UploadAsync(stream, file.FileName, file.ContentType, "logos", ct);
 
-        var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
-        var fileName = $"{Guid.NewGuid()}{ext}";
-        var filePath = Path.Combine(uploadsDir, fileName);
-
-        using (var stream = System.IO.File.Create(filePath))
-            await file.CopyToAsync(stream, ct);
-
-        tenant.LogoUrl = $"/uploads/logos/{fileName}";
+        tenant.LogoUrl = logoUrl;
         await db.SaveChangesAsync(ct);
 
-        return Ok(new { logoUrl = tenant.LogoUrl });
+        return Ok(new { logoUrl });
     }
 
     [HttpGet("categories")]
@@ -199,7 +180,7 @@ public class MenuController(IMediator mediator, IApplicationDbContext db, IWebHo
             await storage.DeleteAsync(item.ImageUrl, ct);
 
         using var stream = file.OpenReadStream();
-        var imageUrl = await storage.UploadAsync(stream, file.FileName, file.ContentType, ct);
+        var imageUrl = await storage.UploadAsync(stream, file.FileName, file.ContentType, "items", ct);
 
         item.ImageUrl = imageUrl;
         await db.SaveChangesAsync(ct);

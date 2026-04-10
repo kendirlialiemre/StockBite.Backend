@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using StockBite.Infrastructure.Persistence;
@@ -11,9 +12,11 @@ using StockBite.Infrastructure.Persistence;
 namespace StockBite.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260410213500_AddEvents")]
+    partial class AddEvents
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -81,12 +84,6 @@ namespace StockBite.Infrastructure.Migrations
                     b.Property<int?>("Age")
                         .HasColumnType("integer");
 
-                    b.Property<decimal>("CardAmount")
-                        .HasColumnType("numeric");
-
-                    b.Property<decimal>("CashAmount")
-                        .HasColumnType("numeric");
-
                     b.Property<decimal>("ChargedAmount")
                         .HasColumnType("numeric");
 
@@ -111,12 +108,6 @@ namespace StockBite.Infrastructure.Migrations
 
                     b.Property<string>("Package")
                         .HasColumnType("text");
-
-                    b.Property<DateTime?>("PaidAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int?>("PaymentMethod")
-                        .HasColumnType("integer");
 
                     b.Property<string>("PersonName")
                         .IsRequired()

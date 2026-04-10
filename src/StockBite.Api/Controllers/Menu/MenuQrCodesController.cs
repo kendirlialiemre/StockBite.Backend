@@ -21,7 +21,7 @@ public class MenuQrCodesController(
     IMediator mediator,
     IApplicationDbContext db,
     ICurrentUserService currentUser,
-    IWebHostEnvironment env) : ControllerBase
+    IStorageService storage) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> GetAll(CancellationToken ct) =>
@@ -36,7 +36,7 @@ public class MenuQrCodesController(
 
         var id = Guid.NewGuid();
         var publicUrl = $"{req.BaseUrl.TrimEnd('/')}/m/{tenant.Slug}?ref={id}";
-        var filePath = GenerateQrPng(id, publicUrl);
+        var filePath = await GenerateAndUploadQrAsync(id, publicUrl, ct);
 
         var dto = await mediator.Send(
             new CreateMenuQrCodeCommand(id, tenant.Id, req.Label, filePath, publicUrl), ct);
@@ -48,7 +48,8 @@ public class MenuQrCodesController(
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
     {
         var filePath = await mediator.Send(new DeleteMenuQrCodeCommand(id), ct);
-        DeleteFile(filePath);
+        if (!string.IsNullOrEmpty(filePath))
+            await storage.DeleteAsync(filePath, ct);
         return NoContent();
     }
 
@@ -60,37 +61,26 @@ public class MenuQrCodesController(
         if (tenant == null) return Unauthorized();
 
         var newPublicUrl = $"{req.BaseUrl.TrimEnd('/')}/m/{tenant.Slug}?ref={id}";
-        var newFilePath = GenerateQrPng(id, newPublicUrl);
+        var newFilePath = await GenerateAndUploadQrAsync(id, newPublicUrl, ct);
 
         var (dto, oldFilePath) = await mediator.Send(
             new RegenerateMenuQrCodeCommand(id, newFilePath, newPublicUrl), ct);
 
-        DeleteFile(oldFilePath);
+        if (!string.IsNullOrEmpty(oldFilePath))
+            await storage.DeleteAsync(oldFilePath, ct);
+
         return Ok(dto);
     }
 
-    private string GenerateQrPng(Guid id, string url)
+    private async Task<string> GenerateAndUploadQrAsync(Guid id, string url, CancellationToken ct)
     {
         using var qrGenerator = new QRCodeGenerator();
         var qrData = qrGenerator.CreateQrCode(url, QRCodeGenerator.ECCLevel.M);
         using var qrCode = new PngByteQRCode(qrData);
         var pngBytes = qrCode.GetGraphic(20);
 
-        var dir = Path.Combine(env.WebRootPath, "uploads", "qr");
-        Directory.CreateDirectory(dir);
-
-        var fileName = $"{id}.png";
-        System.IO.File.WriteAllBytes(Path.Combine(dir, fileName), pngBytes);
-
-        return $"/uploads/qr/{fileName}";
-    }
-
-    private void DeleteFile(string relativePath)
-    {
-        if (string.IsNullOrEmpty(relativePath)) return;
-        var abs = Path.Combine(env.WebRootPath, relativePath.TrimStart('/'));
-        if (System.IO.File.Exists(abs))
-            System.IO.File.Delete(abs);
+        using var ms = new MemoryStream(pngBytes);
+        return await storage.UploadAsync(ms, $"{id}.png", "image/png", "qr", ct);
     }
 }
 

@@ -31,6 +31,7 @@ public class ApplicationDbContext(
     public DbSet<Member> Members => Set<Member>();
     public DbSet<MemberSubscription> MemberSubscriptions => Set<MemberSubscription>();
     public DbSet<SubscriptionSession> SubscriptionSessions => Set<SubscriptionSession>();
+    public DbSet<Event> Events => Set<Event>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -55,6 +56,7 @@ public class ApplicationDbContext(
         modelBuilder.Entity<Member>().HasQueryFilter(e => currentUser.IsSuperAdmin || e.TenantId == currentUser.TenantId);
         modelBuilder.Entity<MemberSubscription>().HasQueryFilter(e => currentUser.IsSuperAdmin || e.TenantId == currentUser.TenantId);
         modelBuilder.Entity<SubscriptionSession>().HasQueryFilter(e => currentUser.IsSuperAdmin || e.TenantId == currentUser.TenantId);
+        modelBuilder.Entity<Event>().HasQueryFilter(e => currentUser.IsSuperAdmin || e.TenantId == currentUser.TenantId);
     }
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

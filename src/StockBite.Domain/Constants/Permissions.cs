@@ -35,12 +35,19 @@ public static class Permissions
         public const string Manage = "Tables.Manage";
     }
 
+    public static class Events
+    {
+        public const string View = "Events.View";
+        public const string Manage = "Events.Manage";
+    }
+
     public static IEnumerable<string> All() =>
     [
         Menu.View, Menu.Edit,
         Orders.View, Orders.Create, Orders.Close, Orders.Cancel,
         Stock.View, Stock.AddItem, Stock.EditItem, Stock.AddMovement,
         ProfitLoss.View,
-        Tables.View, Tables.Manage
+        Tables.View, Tables.Manage,
+        Events.View, Events.Manage
     ];
 }
