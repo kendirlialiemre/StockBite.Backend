@@ -55,6 +55,22 @@ public class OrdersController(IMediator mediator) : ControllerBase
         await mediator.Send(new CancelOrderCommand(orderId), ct);
         return NoContent();
     }
+
+    [HttpPost("{orderId:guid}/timer/pause")]
+    [RequirePermission(Permissions.Tables.Manage)]
+    public async Task<IActionResult> PauseTimer(Guid orderId, CancellationToken ct)
+    {
+        await mediator.Send(new PauseTimerCommand(orderId), ct);
+        return NoContent();
+    }
+
+    [HttpPost("{orderId:guid}/timer/resume")]
+    [RequirePermission(Permissions.Tables.Manage)]
+    public async Task<IActionResult> ResumeTimer(Guid orderId, CancellationToken ct)
+    {
+        await mediator.Send(new ResumeTimerCommand(orderId), ct);
+        return NoContent();
+    }
 }
 
 [ApiController]
@@ -77,8 +93,17 @@ public class TablesController(IMediator mediator) : ControllerBase
     [RequirePermission(Permissions.Tables.Manage)]
     public async Task<IActionResult> OpenTable([FromBody] OpenTableRequest req, CancellationToken ct) =>
         Ok(await mediator.Send(new OpenTableCommand(req.Name), ct));
+
+    [HttpPatch("{tableId:guid}/name")]
+    [RequirePermission(Permissions.Tables.Manage)]
+    public async Task<IActionResult> RenameTable(Guid tableId, [FromBody] RenameTableRequest req, CancellationToken ct)
+    {
+        await mediator.Send(new RenameTableCommand(tableId, req.Name), ct);
+        return NoContent();
+    }
 }
 
 public record AddItemRequest(Guid MenuItemId, int Quantity, string? Note);
 public record OpenTableRequest(string Name);
+public record RenameTableRequest(string Name);
 public record CloseOrderRequest(PaymentMethod PaymentMethod, decimal? CashAmount = null, decimal? CardAmount = null);

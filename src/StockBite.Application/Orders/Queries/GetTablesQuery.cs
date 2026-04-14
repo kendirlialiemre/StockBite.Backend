@@ -36,7 +36,10 @@ public class GetTablesQueryHandler(IApplicationDbContext db)
                 order?.Id,
                 order?.TotalAmount ?? 0,
                 order?.Items.Count ?? 0,
-                order?.OpenedAt ?? t.CreatedAt
+                order?.OpenedAt ?? t.CreatedAt,
+                order?.IsTimerPaused ?? false,
+                order?.TimerOffsetSeconds ?? 0,
+                order?.TimerLastStartedAt ?? t.CreatedAt
             );
         }).ToList();
     }

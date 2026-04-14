@@ -31,6 +31,6 @@ public class OpenTableCommandHandler(IApplicationDbContext db, ICurrentUserServi
 
         await db.SaveChangesAsync(ct);
 
-        return new TableWithOrderDto(table.Id, table.Name, order.Id, 0, 0, order.OpenedAt);
+        return new TableWithOrderDto(table.Id, table.Name, order.Id, 0, 0, order.OpenedAt, false, 0, order.TimerLastStartedAt);
     }
 }

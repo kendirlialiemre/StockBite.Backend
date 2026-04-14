@@ -17,4 +17,9 @@ public class Order : BaseEntity
     public string? Note { get; set; }
     public PaymentMethod? PaymentMethod { get; set; }
     public ICollection<OrderItem> Items { get; set; } = new List<OrderItem>();
+
+    // Timer
+    public bool IsTimerPaused { get; set; } = false;
+    public int TimerOffsetSeconds { get; set; } = 0;
+    public DateTime TimerLastStartedAt { get; set; } = DateTime.UtcNow;
 }
